@@ -1,0 +1,5 @@
+# TODO: 実装時に必要なライブラリを記載する。
+# Flask
+# ultralytics
+# opencv-python
+# pyttsx3
