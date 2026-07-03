@@ -14,3 +14,6 @@ htmlcov/
 Thumbs.db
 
 *.log
+
+data/yolo_dataset/*
+!data/yolo_dataset/.gitkeep
