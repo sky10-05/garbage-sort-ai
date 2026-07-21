@@ -55,7 +55,7 @@ def select_municipality():
             return render_error("選択した自治体が見つかりません。", "municipality_not_found")
 
         session["municipality_id"] = municipality_id
-        session["voice_enabled"] = request.form.get("voice_enabled", "on") == "on"
+        session["voice_enabled"] = request.form.get("voice_enabled") == "on"
         session["retry_count"] = 0
         return redirect(url_for("capture"))
 
@@ -195,7 +195,7 @@ def question():
 
     if request.method == "POST":
         answer_id = request.form.get("answer_id", type=int)
-        answer = repository.get_answer(answer_id) if answer_id else None
+        answer = repository.get_answer_for_rule(answer_id, pending["rule_id"]) if answer_id else None
         if answer is None:
             return render_error("回答を選択してください。", "answer_not_selected")
 
@@ -206,7 +206,59 @@ def question():
         session.pop("pending_result", None)
         return redirect(url_for("result", history_id=history_id))
 
-    return render_template("index.html", mode="question", municipality=municipality, question=question_data)
+    return render_template(
+        "index.html",
+        mode="question",
+        municipality=municipality,
+        question=question_data,
+        voice_enabled=session.get("voice_enabled", True),
+    )
+
+
+@app.route("/candidate/select", methods=["POST"])
+def select_candidate():
+    municipality = current_municipality()
+    if municipality is None:
+        return jsonify({"ok": False, "message": "自治体を選択してください。"}), 400
+
+    garbage_id = request.form.get("garbage_id", type=int)
+    garbage = repository.get_garbage(garbage_id) if garbage_id else None
+    if garbage is None:
+        return jsonify({"ok": False, "message": "候補のごみ情報が見つかりません。"}), 404
+
+    rule = repository.get_rule(municipality["municipality_id"], garbage["garbage_id"])
+    if rule is None:
+        repository.save_feedback(municipality["municipality_id"], garbage["garbage_name"], "候補選択後の分別ルールが未登録です。")
+        return jsonify({"ok": False, "message": "選択した候補の分別ルールが登録されていません。"}), 404
+
+    result = {
+        "label": garbage["yolo_label"],
+        "display_name": garbage["garbage_name"],
+        "confidence": None,
+    }
+    question_data = repository.get_first_question(rule["rule_id"]) if rule["need_question"] else None
+    if question_data:
+        session["pending_result"] = build_pending_result(
+            municipality,
+            garbage,
+            rule,
+            result,
+            None,
+            False,
+            result_status="candidate_selected",
+        )
+        return jsonify({"ok": True, "status": "question", "url": url_for("question")})
+
+    history_id = save_success_history(
+        municipality,
+        garbage,
+        rule,
+        result,
+        None,
+        False,
+        result_status="candidate_selected",
+    )
+    return jsonify({"ok": True, "status": "result", "url": url_for("result", history_id=history_id)})
 
 
 @app.route("/result/<int:history_id>")
@@ -292,7 +344,7 @@ def get_detection_result(image_path: Path, override_confidence: float | None = N
     return result
 
 
-def build_pending_result(municipality, garbage, rule, mock_result, image_path, image_save_consent):
+def build_pending_result(municipality, garbage, rule, mock_result, image_path, image_save_consent, result_status="success"):
     return {
         "municipality_id": municipality["municipality_id"],
         "detected_garbage_id": garbage["garbage_id"],
@@ -304,13 +356,13 @@ def build_pending_result(municipality, garbage, rule, mock_result, image_path, i
         "image_save_consent": 1 if image_save_consent else 0,
         "image_saved": 1 if image_path else 0,
         "image_path": image_path,
-        "result_status": "success",
+        "result_status": result_status,
     }
 
 
-def save_success_history(municipality, garbage, rule, mock_result, image_path, image_save_consent):
+def save_success_history(municipality, garbage, rule, mock_result, image_path, image_save_consent, result_status="success"):
     return repository.save_history(
-        build_pending_result(municipality, garbage, rule, mock_result, image_path, image_save_consent)
+        build_pending_result(municipality, garbage, rule, mock_result, image_path, image_save_consent, result_status)
     )
 
 

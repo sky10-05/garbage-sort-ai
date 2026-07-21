@@ -65,7 +65,7 @@
         <section class="panel">
             <h2>確認質問</h2>
             <form method="post" class="form-stack">
-                <p class="question-text">質問 {{ question.question_order }} / 2: {{ question.question_text }}</p>
+                <p class="question-text">質問 {{ question.question_order }} / {{ question.total_questions }}: {{ question.question_text }}</p>
                 {% for answer in question.answers %}
                 <button type="submit" name="answer_id" value="{{ answer.answer_id }}" class="secondary-button">
                     {{ answer.answer_value }}
@@ -86,6 +86,9 @@
                 <dt>捨て方</dt>
                 <dd>{{ result.result_guide_text or "自治体の公式案内をご確認ください。" }}</dd>
             </dl>
+            {% if result.result_status == "candidate_selected" %}
+            <p class="hint">AI判定の信頼度が低かったため、選択した候補に基づいて案内しています。</p>
+            {% endif %}
             {% if voice_enabled %}
             <button type="button" id="speakButton" class="secondary-button">音声案内</button>
             {% endif %}

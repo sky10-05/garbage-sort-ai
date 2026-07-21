@@ -197,6 +197,14 @@ def get_garbage_by_label(label: str, connection: sqlite3.Connection | None = Non
         return new_connection.execute(query, (label,)).fetchone()
 
 
+def get_garbage(garbage_id: int) -> sqlite3.Row | None:
+    with get_connection() as connection:
+        return connection.execute(
+            "SELECT * FROM garbage_master WHERE garbage_id = ?",
+            (garbage_id,),
+        ).fetchone()
+
+
 def get_garbage_type_id(type_name: str, connection: sqlite3.Connection) -> int:
     return connection.execute(
         "SELECT garbage_type_id FROM garbage_type WHERE type_name = ?",
@@ -235,6 +243,7 @@ def get_first_question(rule_id: int) -> dict | None:
     return {
         "question_text": rows[0]["question_text"],
         "question_order": rows[0]["question_order"],
+        "total_questions": max(row["question_order"] for row in rows),
         "answers": rows,
     }
 
@@ -249,6 +258,19 @@ def get_answer(answer_id: int) -> sqlite3.Row | None:
             WHERE qa.answer_id = ?
             """,
             (answer_id,),
+        ).fetchone()
+
+
+def get_answer_for_rule(answer_id: int, rule_id: int) -> sqlite3.Row | None:
+    with get_connection() as connection:
+        return connection.execute(
+            """
+            SELECT qa.*, gt.type_name
+            FROM question_answer qa
+            LEFT JOIN garbage_type gt ON gt.garbage_type_id = qa.result_garbage_type_id
+            WHERE qa.answer_id = ? AND qa.rule_id = ?
+            """,
+            (answer_id, rule_id),
         ).fetchone()
 
 

@@ -101,7 +101,8 @@ input[type="file"] {
 .primary-button,
 .secondary-button,
 .primary-link,
-.secondary-link {
+.secondary-link,
+.candidate-item {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -112,6 +113,12 @@ input[type="file"] {
     font-weight: 700;
     text-decoration: none;
     cursor: pointer;
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+    cursor: wait;
+    opacity: 0.65;
 }
 
 .primary-button,
@@ -183,12 +190,25 @@ video {
     margin-top: 12px;
 }
 
-.candidate-item,
 .history-list li {
     border: 1px solid #bbf7d0;
     border-radius: 6px;
     padding: 12px;
     background: #f8fffb;
+}
+
+.candidate-item {
+    width: 100%;
+    border: 1px solid #86efac;
+    border-radius: 6px;
+    padding: 12px;
+    background: #f8fffb;
+    color: #14532d;
+    text-align: left;
+}
+
+.candidate-item:hover {
+    background: #dcfce7;
 }
 
 .result-list {
@@ -234,7 +254,8 @@ video {
     .primary-button,
     .secondary-button,
     .primary-link,
-    .secondary-link {
+    .secondary-link,
+    .candidate-item {
         width: 100%;
     }
 }
