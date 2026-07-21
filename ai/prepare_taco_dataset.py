@@ -92,6 +92,26 @@ DATASET_CONFIGS = [
             "エアゾール缶と目視確認した画像だけallowlistで統合する"
         ),
     ),
+    DatasetConfig(
+        key="glass_bottle_extra",
+        root_name="glass_bottle",
+        class_map={
+            "brown_glass_bottle": "glass_bottle",
+            "clear_glass_bottle": "glass_bottle",
+            "glass bottle": "glass_bottle",
+        },
+        enabled=True,
+        requires_allowlist=True,
+        skip_reason="glass_bottle補強用に、採用基準を満たす画像だけallowlistで統合する",
+    ),
+    DatasetConfig(
+        key="plastic_bottles_extra",
+        root_name="plastic_bottles",
+        class_map={"plastic-bottle": "plastic_bottle"},
+        enabled=True,
+        requires_allowlist=True,
+        skip_reason="plastic_bottle補強用に、飲料用ペットボトルとして使える画像だけallowlistで統合する",
+    ),
 ]
 
 
@@ -390,6 +410,8 @@ def prepare_dataset(
     output_dir: Path,
     battery_allowlist: Path | None,
     spray_can_allowlist: Path | None,
+    glass_bottle_allowlist: Path | None,
+    plastic_bottle_allowlist: Path | None,
 ) -> dict[str, object]:
     reset_output_dir(output_dir)
     write_output_yaml(output_dir)
@@ -397,6 +419,8 @@ def prepare_dataset(
     allowlist_values_by_key = {
         "batteries": load_allowlist(battery_allowlist),
         "spray_can": load_allowlist(spray_can_allowlist),
+        "glass_bottle_extra": load_allowlist(glass_bottle_allowlist),
+        "plastic_bottles_extra": load_allowlist(plastic_bottle_allowlist),
     }
     dataset_reports: list[dict[str, object]] = []
     total_output_image_counts: dict[str, Counter[int]] = defaultdict(Counter)
@@ -487,6 +511,10 @@ def prepare_dataset(
         "battery_allowlist_count": len(allowlist_values_by_key["batteries"]),
         "spray_can_allowlist": spray_can_allowlist,
         "spray_can_allowlist_count": len(allowlist_values_by_key["spray_can"]),
+        "glass_bottle_allowlist": glass_bottle_allowlist,
+        "glass_bottle_allowlist_count": len(allowlist_values_by_key["glass_bottle_extra"]),
+        "plastic_bottle_allowlist": plastic_bottle_allowlist,
+        "plastic_bottle_allowlist_count": len(allowlist_values_by_key["plastic_bottles_extra"]),
     }
 
 
@@ -600,6 +628,18 @@ def main() -> int:
         default=None,
         help="エアゾール缶と目視確認したspray can画像のパス、ファイル名、またはstemを1行ずつ書いたファイル",
     )
+    parser.add_argument(
+        "--glass-bottle-allowlist",
+        type=Path,
+        default=None,
+        help="ガラスびんとして利用するGlass Bottle画像のパス、ファイル名、またはstemを1行ずつ書いたファイル",
+    )
+    parser.add_argument(
+        "--plastic-bottle-allowlist",
+        type=Path,
+        default=None,
+        help="ペットボトルとして利用するPlastic Bottle画像のパス、ファイル名、またはstemを1行ずつ書いたファイル",
+    )
     args = parser.parse_args()
 
     result = prepare_dataset(
@@ -607,6 +647,8 @@ def main() -> int:
         output_dir=args.output_dir.resolve(),
         battery_allowlist=args.battery_allowlist.resolve() if args.battery_allowlist else None,
         spray_can_allowlist=args.spray_can_allowlist.resolve() if args.spray_can_allowlist else None,
+        glass_bottle_allowlist=args.glass_bottle_allowlist.resolve() if args.glass_bottle_allowlist else None,
+        plastic_bottle_allowlist=args.plastic_bottle_allowlist.resolve() if args.plastic_bottle_allowlist else None,
     )
     print_report(result, args.output_dir.resolve())
 
