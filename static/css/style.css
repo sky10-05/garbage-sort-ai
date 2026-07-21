@@ -43,13 +43,20 @@ label {
 }
 
 select,
-input[type="number"] {
+input[type="file"] {
     width: 100%;
     min-height: 44px;
     border: 1px solid #bcccdc;
     border-radius: 6px;
     padding: 8px 10px;
     font-size: 16px;
+}
+
+.file-input-row {
+    padding: 12px;
+    border: 1px solid #d9e2ec;
+    border-radius: 6px;
+    background: #f8fafc;
 }
 
 .check-row {

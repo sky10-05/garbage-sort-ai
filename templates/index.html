@@ -29,9 +29,9 @@
             <canvas id="captureCanvas" hidden></canvas>
 
             <form id="captureForm" class="form-stack">
-                <label>
-                    仮信頼度
-                    <input type="number" id="confidenceInput" name="confidence" value="0.92" min="0" max="1" step="0.01">
+                <label class="file-input-row">
+                    画像を選択して判定
+                    <input type="file" id="uploadImageInput" accept="image/jpeg,image/png,image/webp">
                 </label>
                 <label class="check-row">
                     <input type="checkbox" id="imageSaveConsent">
@@ -39,6 +39,7 @@
                 </label>
                 <button type="button" id="startCameraButton" class="secondary-button">カメラ起動</button>
                 <button type="submit" class="primary-button">撮影する</button>
+                <button type="button" id="uploadAnalyzeButton" class="secondary-button">選択画像で判定</button>
             </form>
 
             <div id="messageArea" class="message-area"></div>
@@ -81,7 +82,9 @@
                 <dt>捨て方</dt>
                 <dd>{{ result.result_guide_text or "自治体の公式案内をご確認ください。" }}</dd>
             </dl>
+            {% if voice_enabled %}
             <button type="button" id="speakButton" class="secondary-button">音声案内</button>
+            {% endif %}
             <a href="{{ url_for('detail', history_id=result.history_id) }}" class="secondary-link">詳細手順を見る</a>
             <a href="{{ url_for('capture') }}" class="primary-link">もう一度判定</a>
         </section>
