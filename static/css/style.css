@@ -1,1 +1,166 @@
-/* TODO: 画面レイアウトと操作しやすいUIを実装する。 */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #f4f6f8;
+    color: #1f2933;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app-shell {
+    width: min(920px, 100%);
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.page-header {
+    margin-bottom: 16px;
+}
+
+.page-header h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+}
+
+.panel {
+    background: #ffffff;
+    border: 1px solid #d9e2ec;
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.form-stack {
+    display: grid;
+    gap: 16px;
+}
+
+label {
+    display: grid;
+    gap: 6px;
+    font-weight: 700;
+}
+
+select,
+input[type="number"] {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid #bcccdc;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 16px;
+}
+
+.check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+}
+
+.primary-button,
+.secondary-button,
+.primary-link,
+.secondary-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.primary-button,
+.primary-link {
+    border: 1px solid #1769aa;
+    background: #1769aa;
+    color: #ffffff;
+}
+
+.secondary-button,
+.secondary-link {
+    border: 1px solid #9fb3c8;
+    background: #ffffff;
+    color: #243b53;
+}
+
+.nav-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.nav-row a {
+    color: #1769aa;
+    font-weight: 700;
+}
+
+video {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #102a43;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.message-area {
+    min-height: 32px;
+    margin-top: 16px;
+    font-weight: 700;
+}
+
+.error-text,
+.error-panel {
+    color: #9b1c1c;
+}
+
+.candidate-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.candidate-item,
+.history-list li {
+    border: 1px solid #d9e2ec;
+    border-radius: 6px;
+    padding: 12px;
+    background: #f8fafc;
+}
+
+.result-list {
+    display: grid;
+    grid-template-columns: minmax(96px, 160px) 1fr;
+    gap: 12px;
+}
+
+.result-list dt {
+    font-weight: 800;
+}
+
+.result-list dd {
+    margin: 0;
+}
+
+.history-list {
+    display: grid;
+    gap: 10px;
+    padding: 0;
+    list-style: none;
+}
+
+.history-list li {
+    display: grid;
+    gap: 6px;
+}
+
+.hint {
+    color: #52606d;
+    line-height: 1.7;
+}

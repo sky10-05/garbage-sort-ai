@@ -1,5 +1,5 @@
-# TODO: 実装時に必要なライブラリを記載する。
-# Flask
+Flask>=3.0,<4.0
+
+# YOLO連携時に追加予定
 # ultralytics
 # opencv-python
-# pyttsx3

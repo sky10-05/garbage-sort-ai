@@ -1,1 +1,40 @@
-<!-- TODO: 判定履歴を一覧表示する画面を実装する。 -->
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>判定履歴 - AIごみ分別案内</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <main class="app-shell">
+        <header class="page-header">
+            <h1>判定履歴</h1>
+            <p>自治体: {{ municipality.municipality_name }}</p>
+        </header>
+
+        <nav class="nav-row">
+            <a href="{{ url_for('capture') }}">撮影</a>
+            <a href="{{ url_for('settings') }}">設定</a>
+        </nav>
+
+        <section class="panel">
+            <h2>最新2件</h2>
+            {% if histories %}
+            <ul class="history-list">
+                {% for item in histories %}
+                <li>
+                    <strong>{{ item.garbage_name or item.detected_label }}</strong>
+                    <span>{{ item.type_name or "判定不可" }}</span>
+                    <small>{{ item.created_at }}</small>
+                    <a href="{{ url_for('detail', history_id=item.history_id) }}">詳細</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>まだ判定履歴はありません。</p>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

@@ -14,6 +14,14 @@ htmlcov/
 Thumbs.db
 
 *.log
+*:Zone.Identifier
+*.pt
+runs/
 
 data/yolo_dataset/*
 !data/yolo_dataset/.gitkeep
+data/review/
+
+*.zip
+data/raw/*
+!data/raw/.gitkeep
