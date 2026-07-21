@@ -6,6 +6,7 @@ import uuid
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
 
+from ai import model as yolo_model
 from database import repository
 
 
@@ -22,6 +23,7 @@ MOCK_RESULT = {
     "display_name": "ペットボトル",
     "confidence": 0.92,
 }
+USE_MOCK_INFERENCE = os.environ.get("USE_MOCK_INFERENCE", "0") == "1"
 
 
 app = Flask(__name__)
@@ -108,15 +110,24 @@ def analyze():
         return jsonify({"ok": False, "message": validation_error}), 400
 
     image_save_consent = request.form.get("image_save_consent") == "true"
-    confidence = request.form.get("confidence", type=float) or MOCK_RESULT["confidence"]
+    confidence = request.form.get("confidence", type=float)
     retry_count = request.form.get("retry_count", type=int)
     if retry_count is None:
         retry_count = session.get("retry_count", 0)
 
     image_path = save_temp_image(uploaded_file)
-    mock_result = get_mock_result(confidence)
+    try:
+        detection_result = get_detection_result(image_path, confidence)
+    except yolo_model.ModelLoadError:
+        app.logger.exception("YOLO model could not be loaded.")
+        cleanup_temp_image(image_path, image_save_consent)
+        return jsonify({"ok": False, "message": "AI判定モデルを読み込めませんでした。"}), 500
+    except yolo_model.InferenceError:
+        app.logger.exception("YOLO inference failed.")
+        cleanup_temp_image(image_path, image_save_consent)
+        return jsonify({"ok": False, "message": "AI判定に失敗しました。もう一度撮影してください。"}), 500
 
-    if mock_result["confidence"] < CONFIDENCE_THRESHOLD:
+    if detection_result["confidence"] < CONFIDENCE_THRESHOLD:
         retry_count += 1
         session["retry_count"] = retry_count
         cleanup_temp_image(image_path, image_save_consent)
@@ -124,7 +135,7 @@ def analyze():
             candidates = [dict(row) for row in repository.fetch_candidates(MAX_CANDIDATES)]
             repository.save_feedback(
                 municipality["municipality_id"],
-                mock_result["label"],
+                detection_result["label"],
                 "信頼度不足により候補表示へ遷移しました。",
             )
             return jsonify(
@@ -146,10 +157,10 @@ def analyze():
         )
 
     session["retry_count"] = 0
-    garbage = repository.get_garbage_by_label(mock_result["label"])
+    garbage = repository.get_garbage_by_label(detection_result["label"])
     if garbage is None:
         cleanup_temp_image(image_path, image_save_consent)
-        repository.save_feedback(municipality["municipality_id"], mock_result["label"], "DBに存在しないAIラベルです。")
+        repository.save_feedback(municipality["municipality_id"], detection_result["label"], "DBに存在しないAIラベルです。")
         return jsonify({"ok": False, "message": "このごみは現在対応していません。"}), 404
 
     rule = repository.get_rule(municipality["municipality_id"], garbage["garbage_id"])
@@ -163,10 +174,10 @@ def analyze():
     question = repository.get_first_question(rule["rule_id"]) if rule["need_question"] else None
 
     if question:
-        session["pending_result"] = build_pending_result(municipality, garbage, rule, mock_result, stored_image_path, image_save_consent)
+        session["pending_result"] = build_pending_result(municipality, garbage, rule, detection_result, stored_image_path, image_save_consent)
         return jsonify({"ok": True, "status": "question", "url": url_for("question")})
 
-    history_id = save_success_history(municipality, garbage, rule, mock_result, stored_image_path, image_save_consent)
+    history_id = save_success_history(municipality, garbage, rule, detection_result, stored_image_path, image_save_consent)
     return jsonify({"ok": True, "status": "result", "url": url_for("result", history_id=history_id)})
 
 
@@ -268,6 +279,16 @@ def cleanup_temp_image(image_path: Path, keep_image: bool) -> None:
 def get_mock_result(confidence: float) -> dict:
     result = MOCK_RESULT.copy()
     result["confidence"] = confidence
+    return result
+
+
+def get_detection_result(image_path: Path, override_confidence: float | None = None) -> dict:
+    if USE_MOCK_INFERENCE:
+        return get_mock_result(override_confidence or MOCK_RESULT["confidence"])
+
+    result = yolo_model.predict_image(image_path)
+    if override_confidence is not None:
+        result["confidence"] = override_confidence
     return result
 
 

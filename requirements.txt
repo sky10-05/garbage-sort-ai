@@ -1,5 +1,2 @@
 Flask>=3.0,<4.0
-
-# YOLO連携時に追加予定
-# ultralytics
-# opencv-python
+ultralytics>=8.0
