@@ -4,6 +4,13 @@ import sqlite3
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "garbage_rules.db"
+TARGET_YOLO_LABELS = (
+    "plastic_bottle",
+    "drink_can",
+    "glass_bottle",
+    "aerosol_can",
+    "dry_battery",
+)
 
 
 def get_connection() -> sqlite3.Connection:
@@ -15,14 +22,10 @@ def get_connection() -> sqlite3.Connection:
 
 def ensure_seed_data() -> None:
     with get_connection() as connection:
-        count = connection.execute("SELECT COUNT(*) FROM prefecture").fetchone()[0]
-        if count:
-            return
-
-        connection.execute("INSERT INTO prefecture(prefecture_name) VALUES (?)", ("愛知県",))
+        connection.execute("INSERT OR IGNORE INTO prefecture(prefecture_name) VALUES (?)", ("愛知県",))
         prefecture_id = connection.execute("SELECT prefecture_id FROM prefecture WHERE prefecture_name = ?", ("愛知県",)).fetchone()[0]
         connection.execute(
-            "INSERT INTO municipality(prefecture_id, municipality_name) VALUES (?, ?)",
+            "INSERT OR IGNORE INTO municipality(prefecture_id, municipality_name) VALUES (?, ?)",
             (prefecture_id, "名古屋市"),
         )
         municipality_id = connection.execute(
@@ -37,22 +40,28 @@ def ensure_seed_data() -> None:
             ("有害ごみ", "電池・スプレー缶など注意が必要なごみ"),
         ]
         connection.executemany(
-            "INSERT INTO garbage_type(type_name, description) VALUES (?, ?)",
+            "INSERT OR IGNORE INTO garbage_type(type_name, description) VALUES (?, ?)",
             garbage_types,
         )
 
         garbage_items = [
             ("ペットボトル", "plastic_bottle", "飲料用ペットボトル"),
-            ("乾電池", "battery", "乾電池"),
+            ("飲料缶", "drink_can", "アルミ缶・スチール缶などの飲料缶"),
+            ("ガラスびん", "glass_bottle", "飲料・食品用のガラスびん"),
+            ("スプレー缶", "aerosol_can", "金属製の加圧式エアゾール缶"),
+            ("乾電池", "dry_battery", "単1形、単2形、単3形、単4形などの円筒形乾電池"),
             ("紙くず", "paper", "紙類のごみ"),
         ]
         connection.executemany(
-            "INSERT INTO garbage_master(garbage_name, yolo_label, description) VALUES (?, ?, ?)",
+            "INSERT OR IGNORE INTO garbage_master(garbage_name, yolo_label, description) VALUES (?, ?, ?)",
             garbage_items,
         )
 
         plastic_id = get_garbage_by_label("plastic_bottle", connection)["garbage_id"]
-        battery_id = get_garbage_by_label("battery", connection)["garbage_id"]
+        can_id = get_garbage_by_label("drink_can", connection)["garbage_id"]
+        glass_bottle_id = get_garbage_by_label("glass_bottle", connection)["garbage_id"]
+        aerosol_id = get_garbage_by_label("aerosol_can", connection)["garbage_id"]
+        battery_id = get_garbage_by_label("dry_battery", connection)["garbage_id"]
         paper_id = get_garbage_by_label("paper", connection)["garbage_id"]
         burnable_id = get_garbage_type_id("可燃ごみ", connection)
         resource_id = get_garbage_type_id("資源ごみ", connection)
@@ -60,7 +69,7 @@ def ensure_seed_data() -> None:
 
         connection.executemany(
             """
-            INSERT INTO garbage_rule(municipality_id, garbage_id, garbage_type_id, guide_text, note, need_question)
+            INSERT OR IGNORE INTO garbage_rule(municipality_id, garbage_id, garbage_type_id, guide_text, note, need_question)
             VALUES (?, ?, ?, ?, ?, ?)
             """,
             [
@@ -71,6 +80,30 @@ def ensure_seed_data() -> None:
                     "キャップとラベルを外し、中を軽くすすいで資源ごみに出してください。",
                     "汚れが落ちない場合は可燃ごみとして扱います。",
                     1,
+                ),
+                (
+                    municipality_id,
+                    can_id,
+                    resource_id,
+                    "中を空にして軽くすすぎ、資源ごみに出してください。",
+                    "汚れが落ちない場合は不燃ごみとして扱う場合があります。",
+                    0,
+                ),
+                (
+                    municipality_id,
+                    glass_bottle_id,
+                    resource_id,
+                    "キャップを外し、中を軽くすすいで資源ごみに出してください。",
+                    "割れたびんは紙などで包み、不燃ごみとして扱う場合があります。",
+                    0,
+                ),
+                (
+                    municipality_id,
+                    aerosol_id,
+                    hazardous_id,
+                    "中身を使い切り、自治体指定の方法でスプレー缶として出してください。",
+                    "穴あけの要否は自治体の案内に従ってください。",
+                    0,
                 ),
                 (
                     municipality_id,
@@ -91,7 +124,7 @@ def ensure_seed_data() -> None:
             ],
         )
 
-        connection.execute("INSERT INTO question_type(question_text) VALUES (?)", ("汚れていますか？",))
+        connection.execute("INSERT OR IGNORE INTO question_type(question_text) VALUES (?)", ("汚れていますか？",))
         question_type_id = connection.execute(
             "SELECT question_type_id FROM question_type WHERE question_text = ?",
             ("汚れていますか？",),
@@ -99,7 +132,7 @@ def ensure_seed_data() -> None:
         rule_id = get_rule(municipality_id, plastic_id, connection)["rule_id"]
         connection.executemany(
             """
-            INSERT INTO question_answer(
+            INSERT OR IGNORE INTO question_answer(
                 rule_id, question_type_id, question_order, answer_value,
                 result_garbage_type_id, result_guide_text, next_question_type_id
             )
@@ -113,7 +146,7 @@ def ensure_seed_data() -> None:
 
         info_questions = ["注意事項はありますか？", "いつ出せますか？", "どこに出せますか？"]
         connection.executemany(
-            "INSERT INTO info_question_type(question_text) VALUES (?)",
+            "INSERT OR IGNORE INTO info_question_type(question_text) VALUES (?)",
             [(question,) for question in info_questions],
         )
         for question, answer in [
@@ -126,7 +159,7 @@ def ensure_seed_data() -> None:
                 (question,),
             ).fetchone()[0]
             connection.execute(
-                "INSERT INTO info_answer(rule_id, info_question_type_id, answer_text) VALUES (?, ?, ?)",
+                "INSERT OR IGNORE INTO info_answer(rule_id, info_question_type_id, answer_text) VALUES (?, ?, ?)",
                 (rule_id, info_question_type_id, answer),
             )
 
@@ -276,8 +309,15 @@ def fetch_latest_history(limit: int = 2) -> list[sqlite3.Row]:
 
 
 def fetch_candidates(limit: int = 3) -> list[sqlite3.Row]:
+    placeholders = ",".join("?" for _ in TARGET_YOLO_LABELS)
     with get_connection() as connection:
         return connection.execute(
-            "SELECT * FROM garbage_master ORDER BY garbage_id LIMIT ?",
-            (limit,),
+            f"""
+            SELECT *
+            FROM garbage_master
+            WHERE yolo_label IN ({placeholders})
+            ORDER BY garbage_id
+            LIMIT ?
+            """,
+            (*TARGET_YOLO_LABELS, limit),
         ).fetchall()

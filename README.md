@@ -30,7 +30,7 @@
 - Batteriesからdry_battery用allowlistを作成済み
 - dry_batteryのtrainを多様性優先でダウンサンプリング済み
 - spray canデータセットからaerosol_can用allowlistを作成済み
-- YOLOモデル学習は今後実施予定
+- YOLOモデル推論をFlask判定処理へ仮組み込み済み
 
 ## 主な機能予定
 
@@ -91,10 +91,24 @@ garbage-sort-ai/
 
 ## 今後の予定
 
-1. 仮データ画面遷移の確認
+1. YOLO推論の実画像画面連携確認
 2. テストケースの追加
 3. TACO・追加データセットの品質確認と不足クラス補強
-4. YOLO画像認識処理の実装
+4. YOLOモデル精度改善
 5. 分別ルール検索機能の拡張
 6. 音声案内機能の調整
 7. 判定履歴機能の拡張
+
+## YOLO推論の試験実行
+
+試験学習済みモデルを使う場合は、以下のようにモデルパスを指定して起動します。
+
+```bash
+YOLO_MODEL_PATH=runs/detect/train-9/weights/best.pt python3 app.py
+```
+
+YOLOモデルを使わず、従来の仮判定結果で画面遷移だけ確認する場合は、以下を使用します。
+
+```bash
+USE_MOCK_INFERENCE=1 python3 app.py
+```
