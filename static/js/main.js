@@ -11,6 +11,16 @@ const speakButton = document.getElementById("speakButton");
 let mediaStream = null;
 let retryCount = 0;
 
+function isVoiceEnabled() {
+    return document.body.dataset.voiceEnabled === "true";
+}
+
+function stopSpeech() {
+    if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+    }
+}
+
 async function startCamera() {
     if (!cameraPreview) return;
     try {
@@ -38,6 +48,7 @@ function captureImage() {
 
 async function submitCapture(event) {
     event.preventDefault();
+    stopSpeech();
     try {
         const blob = await captureImage();
         if (!blob) {
@@ -53,6 +64,7 @@ async function submitCapture(event) {
 }
 
 async function submitUpload() {
+    stopSpeech();
     const file = uploadImageInput?.files?.[0];
     if (!file) {
         showMessage("判定する画像を選択してください。", true);
@@ -108,14 +120,13 @@ function showCandidates(candidates, message) {
 }
 
 function speakText(text) {
-    const voiceEnabled = document.body.dataset.voiceEnabled === "true";
     if (!window.speechSynthesis) return;
-    if (!voiceEnabled) {
-        window.speechSynthesis.cancel();
+    if (!isVoiceEnabled()) {
+        stopSpeech();
         return;
     }
     try {
-        window.speechSynthesis.cancel();
+        stopSpeech();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "ja-JP";
         window.speechSynthesis.speak(utterance);
@@ -139,9 +150,11 @@ if (uploadAnalyzeButton) {
 if (speakButton) {
     const speechText = document.querySelector(".result-panel")?.dataset.speechText;
     speakButton.addEventListener("click", () => speakText(speechText || ""));
-    if (speechText) {
-        speakText(speechText);
-    }
-} else if (window.speechSynthesis) {
-    window.speechSynthesis.cancel();
 }
+
+if (!isVoiceEnabled()) {
+    stopSpeech();
+}
+
+window.addEventListener("pagehide", stopSpeech);
+window.addEventListener("beforeunload", stopSpeech);

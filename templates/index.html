@@ -9,9 +9,10 @@
 <body data-voice-enabled="{{ 'true' if voice_enabled else 'false' }}">
     <main class="app-shell">
         <header class="page-header">
+            <p class="eyebrow">Eco Sorting Assistant</p>
             <h1>AIごみ分別案内システム</h1>
             {% if municipality %}
-            <p>自治体: {{ municipality.municipality_name }}</p>
+            <p class="municipality-label">自治体: {{ municipality.municipality_name }}</p>
             {% endif %}
         </header>
 
@@ -25,6 +26,7 @@
         {% if mode == "capture" %}
         <section class="panel">
             <h2>撮影画面</h2>
+            <p class="lead-text">ごみを1つだけ写して、自治体のルールに合わせた出し方を確認します。</p>
             <video id="cameraPreview" autoplay playsinline></video>
             <canvas id="captureCanvas" hidden></canvas>
 
@@ -37,9 +39,11 @@
                     <input type="checkbox" id="imageSaveConsent">
                     AI改善のため、撮影画像の保存に同意します
                 </label>
-                <button type="button" id="startCameraButton" class="secondary-button">カメラ起動</button>
-                <button type="submit" class="primary-button">撮影する</button>
-                <button type="button" id="uploadAnalyzeButton" class="secondary-button">選択画像で判定</button>
+                <div class="button-row">
+                    <button type="button" id="startCameraButton" class="secondary-button">カメラ起動</button>
+                    <button type="submit" class="primary-button">撮影する</button>
+                    <button type="button" id="uploadAnalyzeButton" class="secondary-button">選択画像で判定</button>
+                </div>
             </form>
 
             <div id="messageArea" class="message-area"></div>
@@ -52,7 +56,7 @@
             <form method="post" class="form-stack">
                 <label class="check-row">
                     <input type="checkbox" name="voice_enabled" value="on" {% if voice_enabled %}checked{% endif %}>
-                    音声案内をONにする
+                    結果画面で音声案内ボタンを表示する
                 </label>
                 <button type="submit" class="primary-button">保存する</button>
             </form>

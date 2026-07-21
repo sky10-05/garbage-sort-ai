@@ -9,11 +9,13 @@
 <body>
     <main class="app-shell">
         <header class="page-header">
+            <p class="eyebrow">Eco Sorting Assistant</p>
             <h1>AIごみ分別案内システム</h1>
         </header>
 
         <section class="panel">
             <h2>お住まいの自治体を選んでください</h2>
+            <p class="lead-text">地域のルールに合わせて、迷いやすいごみの出し方をやさしく案内します。</p>
             <form method="post" class="form-stack">
                 <label for="municipality_id">自治体</label>
                 <select id="municipality_id" name="municipality_id" required>
@@ -27,7 +29,7 @@
 
                 <label class="check-row">
                     <input type="checkbox" name="voice_enabled" value="on" checked>
-                    音声案内をONにする
+                    結果画面で音声案内ボタンを表示する
                 </label>
 
                 <button type="submit" class="primary-button">この自治体で始める</button>
