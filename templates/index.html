@@ -75,7 +75,9 @@
         </section>
         {% elif mode == "result" %}
         <section class="panel result-panel" data-speech-text="{{ result.garbage_name or result.detected_label }}です。{{ result.type_name or '判定不可' }}として、{{ result.result_guide_text or '自治体の案内を確認してください。' }}">
+            <p class="panel-kicker">Result</p>
             <h2>判定結果</h2>
+            <p class="result-title">{{ result.garbage_name or result.detected_label }}</p>
             <dl class="result-list">
                 <dt>ごみ名</dt>
                 <dd>{{ result.garbage_name or result.detected_label }}</dd>
@@ -89,11 +91,65 @@
             {% if result.result_status == "candidate_selected" %}
             <p class="hint">AI判定の信頼度が低かったため、選択した候補に基づいて案内しています。</p>
             {% endif %}
+            {% if result.type_name == "資源ごみ" %}
+            <p class="resource-note">資源として出せるものは、軽くすすいで汚れを落としてから出す案内を優先しています。</p>
+            {% endif %}
+            <div class="action-row">
             {% if voice_enabled %}
             <button type="button" id="speakButton" class="secondary-button">音声案内</button>
             {% endif %}
             <a href="{{ url_for('detail', history_id=result.history_id) }}" class="secondary-link">詳細手順を見る</a>
             <a href="{{ url_for('capture') }}" class="primary-link">もう一度判定</a>
+            </div>
+        </section>
+        {% elif mode == "detail" %}
+        <section class="panel detail-panel">
+            <p class="panel-kicker">Guide</p>
+            <h2>詳細手順</h2>
+            <p class="result-title">{{ result.garbage_name or result.detected_label }}</p>
+            <p class="lead-text">{{ result.type_name or "自治体確認" }}として出すための確認手順です。</p>
+
+            <ol class="detail-steps">
+                {% if result.type_name == "資源ごみ" %}
+                <li>
+                    <strong>汚れを落とす</strong>
+                    <span>中身を空にして、軽くすすぎます。汚れが落ちる場合は資源ごみとして案内します。</span>
+                </li>
+                <li>
+                    <strong>外せるものを外す</strong>
+                    <span>キャップ、ラベル、ふたなどは自治体の案内に合わせて分けます。</span>
+                </li>
+                {% else %}
+                <li>
+                    <strong>安全を確認する</strong>
+                    <span>中身、破損、発火の危険がないか確認します。</span>
+                </li>
+                <li>
+                    <strong>自治体の指定に合わせる</strong>
+                    <span>危険物や例外がある場合は、回収場所や出し方を自治体案内で確認します。</span>
+                </li>
+                {% endif %}
+                <li>
+                    <strong>指定日に出す</strong>
+                    <span>{{ result.result_guide_text or "自治体の公式案内をご確認ください。" }}</span>
+                </li>
+            </ol>
+
+            {% if info_answers %}
+            <div class="info-list">
+                {% for info in info_answers %}
+                <div class="info-row">
+                    <span>{{ info.question_text }}</span>
+                    <strong>{{ info.answer_text }}</strong>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="action-row">
+                <a href="{{ url_for('result', history_id=result.history_id) }}" class="secondary-link">判定結果に戻る</a>
+                <a href="{{ url_for('capture') }}" class="primary-link">もう一度判定</a>
+            </div>
         </section>
         {% elif mode == "error" %}
         <section class="panel error-panel">

@@ -266,8 +266,7 @@ def result(history_id: int):
     municipality = current_municipality()
     if municipality is None:
         return redirect(url_for("select_municipality"))
-    latest = repository.fetch_latest_history(50)
-    history_item = next((row for row in latest if row["history_id"] == history_id), None)
+    history_item = repository.get_history(history_id)
     if history_item is None:
         return render_error("判定履歴が見つかりません。", "history_not_found")
     return render_template(
@@ -281,7 +280,21 @@ def result(history_id: int):
 
 @app.route("/detail/<int:history_id>")
 def detail(history_id: int):
-    return result(history_id)
+    municipality = current_municipality()
+    if municipality is None:
+        return redirect(url_for("select_municipality"))
+    history_item = repository.get_history(history_id)
+    if history_item is None:
+        return render_error("判定履歴が見つかりません。", "history_not_found")
+    info_answers = repository.fetch_info_answers(history_item["rule_id"]) if history_item["rule_id"] else []
+    return render_template(
+        "index.html",
+        mode="detail",
+        municipality=municipality,
+        result=history_item,
+        info_answers=info_answers,
+        voice_enabled=session.get("voice_enabled", True),
+    )
 
 
 @app.route("/history")
