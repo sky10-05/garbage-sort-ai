@@ -26,7 +26,11 @@
 - データベース初期化処理を作成済み
 - 詳細設計と仮データ画面遷移を実装中
 - ファイル構成のひな形を作成済み
-- YOLO連携は今後実装予定
+- TACO・追加データセットからYOLO学習用5クラス統合を準備中
+- Batteriesからdry_battery用allowlistを作成済み
+- dry_batteryのtrainを多様性優先でダウンサンプリング済み
+- spray canデータセットからaerosol_can用allowlistを作成済み
+- YOLOモデル学習は今後実施予定
 
 ## 主な機能予定
 
@@ -59,6 +63,7 @@
 - [画面設計書](docs/画面設計書.md)
 - [詳細設計書](docs/詳細設計書.md)
 - [テスト仕様書](docs/テスト仕様書.md)
+- [TACOデータセット準備](docs/TACOデータセット準備.md)
 
 ## ディレクトリ構成
 
@@ -73,6 +78,8 @@ garbage-sort-ai/
 │  └─ images/
 ├─ templates/
 ├─ ai/
+│  ├─ prepare_taco_dataset.py
+│  └─ train.py
 ├─ database/
 │  ├─ schema.sql
 │  ├─ init_db.py
@@ -86,7 +93,8 @@ garbage-sort-ai/
 
 1. 仮データ画面遷移の確認
 2. テストケースの追加
-3. YOLO画像認識処理の実装
-4. 分別ルール検索機能の拡張
-5. 音声案内機能の調整
-6. 判定履歴機能の拡張
+3. TACO・追加データセットの品質確認と不足クラス補強
+4. YOLO画像認識処理の実装
+5. 分別ルール検索機能の拡張
+6. 音声案内機能の調整
+7. 判定履歴機能の拡張
