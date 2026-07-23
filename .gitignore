@@ -17,6 +17,8 @@ Thumbs.db
 *:Zone.Identifier
 .tmp/
 *.pt
+!models/
+!models/garbage-sort-yolo11n.pt
 runs/
 
 data/yolo_dataset/*

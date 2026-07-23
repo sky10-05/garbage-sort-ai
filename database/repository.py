@@ -132,15 +132,35 @@ def ensure_seed_data() -> None:
         rule_id = get_rule(municipality_id, plastic_id, connection)["rule_id"]
         connection.executemany(
             """
-            INSERT OR IGNORE INTO question_answer(
+            INSERT INTO question_answer(
                 rule_id, question_type_id, question_order, answer_value,
                 result_garbage_type_id, result_guide_text, next_question_type_id
             )
             VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(rule_id, question_type_id, answer_value) DO UPDATE SET
+                result_garbage_type_id = excluded.result_garbage_type_id,
+                result_guide_text = excluded.result_guide_text,
+                next_question_type_id = excluded.next_question_type_id
             """,
             [
-                (rule_id, question_type_id, 1, "はい", burnable_id, "汚れている場合は可燃ごみとして出してください。", None),
-                (rule_id, question_type_id, 1, "いいえ", resource_id, "キャップとラベルを外して資源ごみに出してください。", None),
+                (
+                    rule_id,
+                    question_type_id,
+                    1,
+                    "はい",
+                    resource_id,
+                    "まず水で軽くすすぎ、汚れが落ちる場合はキャップとラベルを外して資源ごみに出してください。汚れが残る場合は可燃ごみとして出してください。",
+                    None,
+                ),
+                (
+                    rule_id,
+                    question_type_id,
+                    1,
+                    "いいえ",
+                    resource_id,
+                    "キャップとラベルを外し、中を軽くすすいで資源ごみに出してください。",
+                    None,
+                ),
             ],
         )
 
@@ -149,19 +169,39 @@ def ensure_seed_data() -> None:
             "INSERT OR IGNORE INTO info_question_type(question_text) VALUES (?)",
             [(question,) for question in info_questions],
         )
-        for question, answer in [
-            ("注意事項はありますか？", "キャップとラベルを外し、中を軽くすすいでください。"),
-            ("いつ出せますか？", "資源ごみの収集日に出してください。"),
-            ("どこに出せますか？", "指定された資源ごみの回収場所に出してください。"),
-        ]:
-            info_question_type_id = connection.execute(
-                "SELECT info_question_type_id FROM info_question_type WHERE question_text = ?",
-                (question,),
-            ).fetchone()[0]
-            connection.execute(
-                "INSERT OR IGNORE INTO info_answer(rule_id, info_question_type_id, answer_text) VALUES (?, ?, ?)",
-                (rule_id, info_question_type_id, answer),
-            )
+        info_answers = {
+            plastic_id: [
+                ("注意事項はありますか？", "キャップとラベルを外し、中を軽くすすいでください。汚れが落ちれば資源ごみとして出せます。"),
+                ("いつ出せますか？", "資源ごみの収集日に出してください。"),
+                ("どこに出せますか？", "指定された資源ごみの回収場所に出してください。"),
+            ],
+            can_id: [
+                ("注意事項はありますか？", "中を空にして軽くすすぎ、つぶし方は自治体の案内に従ってください。"),
+                ("いつ出せますか？", "資源ごみの収集日に出してください。"),
+                ("どこに出せますか？", "指定された資源ごみの回収場所に出してください。"),
+            ],
+            glass_bottle_id: [
+                ("注意事項はありますか？", "キャップを外し、中を軽くすすいでください。割れたびんは自治体の案内に従ってください。"),
+                ("いつ出せますか？", "資源ごみの収集日に出してください。"),
+                ("どこに出せますか？", "指定された資源ごみの回収場所に出してください。"),
+            ],
+        }
+        for garbage_id, answers in info_answers.items():
+            target_rule_id = get_rule(municipality_id, garbage_id, connection)["rule_id"]
+            for question, answer in answers:
+                info_question_type_id = connection.execute(
+                    "SELECT info_question_type_id FROM info_question_type WHERE question_text = ?",
+                    (question,),
+                ).fetchone()[0]
+                connection.execute(
+                    """
+                    INSERT INTO info_answer(rule_id, info_question_type_id, answer_text)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(rule_id, info_question_type_id) DO UPDATE SET
+                        answer_text = excluded.answer_text
+                    """,
+                    (target_rule_id, info_question_type_id, answer),
+                )
 
 
 def fetch_municipalities() -> list[sqlite3.Row]:
@@ -195,6 +235,14 @@ def get_garbage_by_label(label: str, connection: sqlite3.Connection | None = Non
         return connection.execute(query, (label,)).fetchone()
     with get_connection() as new_connection:
         return new_connection.execute(query, (label,)).fetchone()
+
+
+def get_garbage(garbage_id: int) -> sqlite3.Row | None:
+    with get_connection() as connection:
+        return connection.execute(
+            "SELECT * FROM garbage_master WHERE garbage_id = ?",
+            (garbage_id,),
+        ).fetchone()
 
 
 def get_garbage_type_id(type_name: str, connection: sqlite3.Connection) -> int:
@@ -235,6 +283,7 @@ def get_first_question(rule_id: int) -> dict | None:
     return {
         "question_text": rows[0]["question_text"],
         "question_order": rows[0]["question_order"],
+        "total_questions": max(row["question_order"] for row in rows),
         "answers": rows,
     }
 
@@ -249,6 +298,19 @@ def get_answer(answer_id: int) -> sqlite3.Row | None:
             WHERE qa.answer_id = ?
             """,
             (answer_id,),
+        ).fetchone()
+
+
+def get_answer_for_rule(answer_id: int, rule_id: int) -> sqlite3.Row | None:
+    with get_connection() as connection:
+        return connection.execute(
+            """
+            SELECT qa.*, gt.type_name
+            FROM question_answer qa
+            LEFT JOIN garbage_type gt ON gt.garbage_type_id = qa.result_garbage_type_id
+            WHERE qa.answer_id = ? AND qa.rule_id = ?
+            """,
+            (answer_id, rule_id),
         ).fetchone()
 
 
@@ -292,6 +354,21 @@ def save_feedback(municipality_id: int | None, input_garbage_name: str, comment:
         return cursor.lastrowid
 
 
+def get_history(history_id: int) -> sqlite3.Row | None:
+    with get_connection() as connection:
+        return connection.execute(
+            """
+            SELECT h.*, m.municipality_name, gm.garbage_name, gm.description, gt.type_name
+            FROM history h
+            JOIN municipality m ON m.municipality_id = h.municipality_id
+            LEFT JOIN garbage_master gm ON gm.garbage_id = h.detected_garbage_id
+            LEFT JOIN garbage_type gt ON gt.garbage_type_id = h.result_garbage_type_id
+            WHERE h.history_id = ?
+            """,
+            (history_id,),
+        ).fetchone()
+
+
 def fetch_latest_history(limit: int = 2) -> list[sqlite3.Row]:
     with get_connection() as connection:
         return connection.execute(
@@ -305,6 +382,20 @@ def fetch_latest_history(limit: int = 2) -> list[sqlite3.Row]:
             LIMIT ?
             """,
             (limit,),
+        ).fetchall()
+
+
+def fetch_info_answers(rule_id: int) -> list[sqlite3.Row]:
+    with get_connection() as connection:
+        return connection.execute(
+            """
+            SELECT iqt.question_text, ia.answer_text
+            FROM info_answer ia
+            JOIN info_question_type iqt ON iqt.info_question_type_id = ia.info_question_type_id
+            WHERE ia.rule_id = ?
+            ORDER BY ia.info_answer_id
+            """,
+            (rule_id,),
         ).fetchall()
 
 

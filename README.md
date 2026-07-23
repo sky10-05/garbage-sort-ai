@@ -35,6 +35,10 @@
 - 音声OFF時に読み上げが残る不具合を修正済み
 - YOLOモデル評価と誤判定改善方針を整理中
 - Glass Bottle系とPlastic Bottle系データセットを追加確認し、allowlist統合済み
+- 発表向けにUIを環境配慮の雰囲気へ調整済み
+- 音声OFF時に読み上げが残らないよう制御を強化済み
+- 判定中表示、候補選択、質問表示を発表向けに改善済み
+- 詳細手順画面と資源ごみ優先の案内文を改善済み
 
 ## 主な機能予定
 
@@ -85,6 +89,8 @@ garbage-sort-ai/
 ├─ ai/
 │  ├─ prepare_taco_dataset.py
 │  └─ train.py
+├─ models/
+│  └─ garbage-sort-yolo11n.pt
 ├─ database/
 │  ├─ schema.sql
 │  ├─ init_db.py
@@ -103,9 +109,21 @@ garbage-sort-ai/
 5. 分別ルール検索機能の拡張
 6. 判定履歴機能の拡張
 
-## YOLO推論の試験実行
+## 他PCでの実行
 
-試験学習済みモデルを使う場合は、以下のようにモデルパスを指定して起動します。
+GitHubから取得したあと、依存関係をインストールし、DBを初期化して起動します。
+
+```bash
+git clone https://github.com/sky10-05/garbage-sort-ai.git
+cd garbage-sort-ai
+pip install -r requirements.txt
+python3 database/init_db.py
+python3 app.py
+```
+
+`python3 app.py` では、同梱している試験学習済みモデル `models/garbage-sort-yolo11n.pt` を使用します。
+
+別のモデルを使う場合は、以下のようにモデルパスを指定します。
 
 ```bash
 YOLO_MODEL_PATH=runs/detect/train-11/weights/best.pt python3 app.py
