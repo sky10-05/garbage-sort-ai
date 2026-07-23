@@ -9,7 +9,7 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_MODEL_PATH = PROJECT_ROOT / "runs" / "detect" / "train-9" / "weights" / "best.pt"
+DEFAULT_MODEL_PATH = PROJECT_ROOT / "models" / "garbage-sort-yolo11n.pt"
 
 CLASS_NAMES = {
     0: "plastic_bottle",

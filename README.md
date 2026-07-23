@@ -89,6 +89,8 @@ garbage-sort-ai/
 ├─ ai/
 │  ├─ prepare_taco_dataset.py
 │  └─ train.py
+├─ models/
+│  └─ garbage-sort-yolo11n.pt
 ├─ database/
 │  ├─ schema.sql
 │  ├─ init_db.py
@@ -107,9 +109,21 @@ garbage-sort-ai/
 5. 分別ルール検索機能の拡張
 6. 判定履歴機能の拡張
 
-## YOLO推論の試験実行
+## 他PCでの実行
 
-試験学習済みモデルを使う場合は、以下のようにモデルパスを指定して起動します。
+GitHubから取得したあと、依存関係をインストールし、DBを初期化して起動します。
+
+```bash
+git clone https://github.com/sky10-05/garbage-sort-ai.git
+cd garbage-sort-ai
+pip install -r requirements.txt
+python3 database/init_db.py
+python3 app.py
+```
+
+`python3 app.py` では、同梱している試験学習済みモデル `models/garbage-sort-yolo11n.pt` を使用します。
+
+別のモデルを使う場合は、以下のようにモデルパスを指定します。
 
 ```bash
 YOLO_MODEL_PATH=runs/detect/train-11/weights/best.pt python3 app.py
